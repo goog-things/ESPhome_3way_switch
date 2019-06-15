@@ -1,0 +1,89 @@
+esphome:
+  name: sonoff1_3way
+  platform: ESP8266
+  board: esp01_1m
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_pw
+  fast_connect: true
+  #^ fast connect is needed if you have a hidden SSID
+  # Optional manual IP
+  manual_ip:
+    static_ip: !secret local_ip_sonoff1
+    gateway: !secret router_ip
+    subnet: !secret subnet
+    dns1: !secret router_ip
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret esphome_password
+
+ota:
+  password: !secret esphome_password
+
+web_server:
+  port: 80
+
+#########################################
+#########################################
+#########################################
+
+mqtt:
+  broker: !secret mqtt_ip
+  username: !secret mqtt_un
+  password: !secret mqtt_pw
+  topic_prefix: "ESPhome"
+  on_message:
+     - topic: ESPhome/switch/sonoff2_3way/state
+       payload: "ON"
+       then:
+         - switch.turn_on: relay_1
+
+     - topic: ESPhome/switch/sonoff2_3way/state
+       payload: "OFF"
+       then:
+         - switch.turn_off: relay_1
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: True
+    name: "sonoff1_3way button"
+    on_press:
+      then:
+        - switch.toggle: relay_1
+
+
+  - platform: status
+    name: "sonoff1_3way Status"
+
+switch:
+  - platform: gpio
+    name: "sonoff1_3way"
+    pin: GPIO12
+    id: relay_1
+    on_turn_on:
+    - light.turn_on: green_led2
+    on_turn_off:
+    - light.turn_off: green_led2
+
+
+output:
+  # Register the green LED as a dimmable output ....
+  - platform: esp8266_pwm
+    id: green_led
+    pin: GPIO13
+    inverted: True
+
+light:
+  # ... and then make a light out of it.
+  - platform: monochromatic
+    name: "sonoff1_3way Green LED"
+    output: green_led
+    id: green_led2
